@@ -1,24 +1,32 @@
+import 'package:flutter/material.dart';
+
 import '../domain/estudiante.dart';
 
-class EstudianteRepository {
-  static final EstudianteRepository _instance = EstudianteRepository._internal();
+class EstudianteRepository extends ChangeNotifier {
   final List<Estudiante> _estudiantes = [];
 
-  EstudianteRepository._internal();
+  List<Estudiante> get estudiantes => List.unmodifiable(_estudiantes);
 
-  factory EstudianteRepository() => _instance;
-
-  List<Estudiante> get estudiantes => _estudiantes;
-
-  void agregar(Estudiante e) {
-    if (!_estudiantes.any((x) => x.email == e.email || x.id == e.id)) {
-      _estudiantes.add(e);
+  void agregar(Estudiante estudiante) {
+    if (!_estudiantes.contains(estudiante)) {
+      _estudiantes.add(estudiante);
+      notifyListeners();
     }
   }
 
-  void agregarTodos(List<Estudiante> nuevos) {
-    for (final e in nuevos) {
-      agregar(e);
+  void agregarTodos(List<Estudiante> nuevosEstudiantes) {
+    bool cambios = false;
+    for (final estudiante in nuevosEstudiantes) {
+      if (!_estudiantes.contains(estudiante)) {
+        _estudiantes.add(estudiante);
+        cambios = true;
+      }
     }
+    if (cambios) notifyListeners();
+  }
+
+  void clear() {
+    _estudiantes.clear();
+    notifyListeners();
   }
 }
