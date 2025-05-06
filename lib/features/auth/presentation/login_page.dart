@@ -14,7 +14,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _login(BuildContext context) {
     final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    // final password = _passwordController.text;
 
     if (email == 'admin@ucb.edu.bo') {
       context.go('/admin');

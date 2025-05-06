@@ -1,7 +1,5 @@
 import 'package:excel/excel.dart';
 
-import 'package:excel/excel.dart';
-
 class Estudiante {
   final int id;
   final String nombre;
