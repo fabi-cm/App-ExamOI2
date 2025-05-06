@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "200744239144",
+    "project_id": "db-invoperativa2",
+    "storage_bucket": "db-invoperativa2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200744239144:android:7bf63fb35fc9c0f1eb751d",
+        "android_client_info": {
+          "package_name": "com.fabioucb.app_io2_examen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzpN-iHUOpiRvetPIkegfpNnt2oLGVNS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200744239144:android:c46613e6bde41ff4eb751d",
+        "android_client_info": {
+          "package_name": "io.ucb.invoperativa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzpN-iHUOpiRvetPIkegfpNnt2oLGVNS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
