@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
 import '../domain/estudiante.dart';
 
 Future<List<Estudiante>> importarDesdeExcel(Set<String> emailsExistentes) async {
@@ -28,6 +29,14 @@ Future<List<Estudiante>> importarDesdeExcel(Set<String> emailsExistentes) async 
       } catch (_) {
         // Ignorar filas mal formateadas
       }
+    }
+  }
+
+  for (var table in excel.tables.keys) {
+    for (var row in excel.tables[table]!.rows) {
+      if (kDebugMode) {
+        print(row);
+      } // 🔍 ¿Esto muestra los datos?
     }
   }
 

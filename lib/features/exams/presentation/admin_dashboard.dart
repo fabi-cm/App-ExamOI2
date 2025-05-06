@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../students/application/importar_estudiantes.dart';
-import '../../students/domain/estudiante.dart';
 import '../../students/presentation/estudiantes_list_page.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -11,7 +9,6 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  final List<Estudiante> _estudiantes = [];
 
   @override
   Widget build(BuildContext context) {
@@ -22,20 +19,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           ListTile(
             title: const Text('📚 Gestión de Estudiantes'),
-            onTap: () async {
-              final nuevos = await importarDesdeExcel(_estudiantes.map((e) => e.email).toSet());
-              setState(() {
-                _estudiantes.addAll(nuevos);
-              });
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EstudiantesListPage(estudiantes: _estudiantes),
-                  ),
-                );
-              }
-            },
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EstudiantesListPage()),
+            ),
           ),
           ListTile(
             title: const Text('✏️ Cargar/Editar Ejercicios'),

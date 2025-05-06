@@ -14,12 +14,19 @@ class Estudiante {
   });
 
   factory Estudiante.fromExcelRow(List<dynamic> row) {
+    String limpiar(dynamic val) => val?.toString().trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
+
+    final idRaw = row[0]?.toString() ?? '';
+    final id = int.tryParse(idRaw.replaceAll(RegExp(r'\D'), '')) ?? 0;
+
+    final email = limpiar(row[4]).toLowerCase();
+
     return Estudiante(
-      id: int.tryParse(row[0].toString()) ?? 0,
-      nombre: row[1]?.toString().trim() ?? '',
-      carrera: row[2]?.toString().trim() ?? '',
-      telefono: row[3]?.toString().trim() ?? '',
-      email: row[4]?.toString().trim() ?? '',
+      id: id,
+      nombre: limpiar(row[1]),
+      carrera: limpiar(row[2]),
+      telefono: limpiar(row[3]),
+      email: email,
     );
   }
 }
