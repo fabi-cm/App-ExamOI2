@@ -1,8 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'core/config.dart';
 import 'core/theme.dart';
 import 'core/router.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'features/students/data/estudiante_repository.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -10,9 +13,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
 
-  // Limitar captura de errores de GPU en dispositivos problemáticos
   FlutterError.onError = (details) {
     if (details.exception is! FlutterErrorDetails) {
       debugPrint('Error capturado: ${details.exception}');
@@ -20,7 +21,19 @@ Future<void> main() async {
     FlutterError.presentError(details);
   };
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<AuthRepository>(
+          create: (_) => AuthRepository(),
+        ),
+        Provider<EstudianteRepository>(
+          create: (context) => EstudianteRepository(), // Asegúrate de inicializarlo correctamente
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

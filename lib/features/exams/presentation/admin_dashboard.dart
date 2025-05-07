@@ -21,7 +21,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             title: const Text('📚 Gestión de Estudiantes'),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const EstudiantesListPage()),
+              MaterialPageRoute(builder: (_) => const EstudiantesListPage(docenteId: 'Admin',)),
             ),
           ),
           ListTile(

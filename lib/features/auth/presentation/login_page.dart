@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../data/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,27 +13,58 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  late final AuthRepository _authRepository;
 
-  void _login(BuildContext context) {
+  @override
+  void initState() {
+    super.initState();
+    _authRepository = context.read<AuthRepository>();
+    // Mover la creación del docente de prueba al primer build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _authRepository.crearDocentePrueba();
+    });
+  }
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
     final email = _emailController.text.trim();
-    // final password = _passwordController.text;
+    final password = _passwordController.text;
 
-    if (email == 'admin@ucb.edu.bo') {
-      context.go('/admin');
-    } else if (email.endsWith('@ucb.edu.bo')) {
-      context.go('/student');
-    } else {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Acceso denegado'),
-          content: const Text('Correo no válido.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-          ],
-        ),
-      );
+    try {
+      final docente = await _authRepository.login(email, password);
+
+      if (docente == null) {
+        _showError('Credenciales incorrectas');
+        return;
+      }
+
+      if (docente.esAdmin) {
+        context.go('/admin');
+      } else {
+        context.go('/docente/${docente.id}');
+      }
+    } catch (e) {
+      _showError('Error al iniciar sesión: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
+  }
+
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -50,17 +83,18 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: _emailController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Correo institucional',
                     prefixIcon: Icon(Icons.email),
                     border: OutlineInputBorder(),
                   ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Contraseña',
                     prefixIcon: Icon(Icons.lock),
                     border: OutlineInputBorder(),
@@ -68,14 +102,19 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () => _login(context),
-                  child: const Text('Iniciar Sesión'),
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Iniciar Sesión'),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
-                  onPressed: () {},
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                )
+                  onPressed: () {
+                    _emailController.text = 'rlujan@ucb.edu.bo';
+                    _passwordController.text = 'admin12';
+                  },
+                  child: const Text('Usar cuenta de prueba'),
+                ),
               ],
             ),
           ),

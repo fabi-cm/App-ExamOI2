@@ -1,105 +1,55 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart';
+import 'package:flutter/material.dart';
 import '../domain/estudiante.dart';
 
-class ImportResult {
-  final List<Estudiante> estudiantes;
-  final List<String> errores;
-  final int tiempoProcesamientoMs;
-
-  ImportResult({
-    required this.estudiantes,
-    required this.errores,
-    required this.tiempoProcesamientoMs,
-  });
-}
-
-Future<ImportResult> _procesarExcelEnIsolate(List<int> bytes) async {
-  final stopwatch = Stopwatch()..start();
-  final estudiantes = <Estudiante>[];
-  final errores = <String>[];
-
+Future<List<Estudiante>> importarDesdeExcel(Set<String> emailsExistentes) async {
   try {
-    final excel = Excel.decodeBytes(bytes);
-
-    for (final table in excel.tables.keys) {
-      final rows = excel.tables[table]!.rows;
-
-      // Saltar encabezados si existen
-      final startRow = rows.length > 1 &&
-          rows[0].any((cell) => cell?.value.toString().contains('ESTUDIANTE') ?? false)
-          ? 1 : 0;
-
-      for (int i = startRow; i < rows.length; i++) {
-        try {
-          final estudiante = Estudiante.fromExcelRow(rows[i]);
-          if (estudiante.email.isNotEmpty) {
-            estudiantes.add(estudiante);
-          }
-        } catch (e, stack) {
-          errores.add('Fila ${i + 1}: ${e.toString()}');
-          if (kDebugMode) {
-            print('Error en fila $i: $e\n$stack');
-          }
-        }
-      }
-    }
-  } catch (e, stack) {
-    errores.add('Error al procesar archivo: ${e.toString()}');
-    if (kDebugMode) {
-      print('Error procesando Excel: $e\n$stack');
-    }
-  }
-
-  stopwatch.stop();
-  return ImportResult(
-    estudiantes: estudiantes,
-    errores: errores,
-    tiempoProcesamientoMs: stopwatch.elapsedMilliseconds,
-  );
-}
-
-Future<ImportResult> importarEstudiantesExcel() async {
-  try {
-    // Selección de archivo
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls'],
       withData: true,
     );
 
-    if (result == null || result.files.isEmpty) {
-      return ImportResult(
-        estudiantes: [],
-        errores: ['Operación cancelada por el usuario'],
-        tiempoProcesamientoMs: 0,
-      );
+    if (result == null || result.files.isEmpty) return [];
+
+    final file = result.files.first;
+    if (file.bytes == null || file.bytes!.isEmpty) return [];
+
+    final excel = Excel.decodeBytes(file.bytes!);
+    final estudiantes = <Estudiante>[];
+    final nuevosEmails = <String>{};
+
+    for (final table in excel.tables.keys) {
+      final rows = excel.tables[table]!.rows;
+
+      // Saltar encabezados
+      final startRow = rows.length > 0 ? 1 : 0;
+
+      for (int i = startRow; i < rows.length; i++) {
+        try {
+          final row = rows[i];
+          // Saltar filas vacías
+          if (row.length < 5 || row.every((cell) => cell?.value == null)) continue;
+
+          final estudiante = Estudiante.fromExcelRow(row);
+          if (estudiante.email.isNotEmpty &&
+              estudiante.email.contains('@') &&
+              !emailsExistentes.contains(estudiante.email) &&
+              !nuevosEmails.contains(estudiante.email)) {
+            estudiantes.add(estudiante);
+            nuevosEmails.add(estudiante.email);
+          }
+        } catch (e) {
+          debugPrint('Error procesando fila $i: $e');
+        }
+      }
     }
 
-    final file = result.files.single;
-    if (file.bytes == null || file.bytes!.isEmpty) {
-      return ImportResult(
-        estudiantes: [],
-        errores: ['El archivo está vacío'],
-        tiempoProcesamientoMs: 0,
-      );
-    }
-
-    // Procesamiento en isolate separado
-    return await compute(
-      _procesarExcelEnIsolate,
-      file.bytes!,
-    );
-  } catch (e, stack) {
-    if (kDebugMode) {
-      print('Error en importarEstudiantesExcel: $e\n$stack');
-    }
-    return ImportResult(
-      estudiantes: [],
-      errores: ['Error inesperado: ${e.toString()}'],
-      tiempoProcesamientoMs: 0,
-    );
+    return estudiantes;
+  } catch (e) {
+    debugPrint('Error al procesar archivo Excel: $e');
+    throw Exception('Formato de archivo no válido. Por favor use la plantilla proporcionada.');
   }
 }
