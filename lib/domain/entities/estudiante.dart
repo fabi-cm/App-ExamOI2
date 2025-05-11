@@ -1,5 +1,3 @@
-import 'package:excel/excel.dart';
-
 class Estudiante {
   final String nombre;
   final String carrera;
@@ -16,13 +14,17 @@ class Estudiante {
   });
 
   factory Estudiante.fromFirestore(Map<String, dynamic> data) {
-    return Estudiante(
-      nombre: data['nombre'] ?? '',
-      carrera: data['carrera'] ?? '',
-      telefono: data['telefono']?.toString() ?? '',
-      email: data['email'] ?? '',
-      activo: data['activo'] ?? false,
-    );
+    try {
+      return Estudiante(
+        nombre: data['nombre']?.toString() ?? '',
+        carrera: data['carrera']?.toString() ?? '',
+        telefono: data['telefono']?.toString() ?? '',
+        email: data['email']?.toString() ?? '',
+        activo: data['activo'] as bool? ?? false,
+      );
+    } catch (e) {
+      throw Exception('Error al convertir datos a Estudiante: $e');
+    }
   }
 
   factory Estudiante.fromExcelRow(List<dynamic> row) {

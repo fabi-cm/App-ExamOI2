@@ -1,39 +1,62 @@
-import 'package:firebase_core/firebase_core.dart';
+import 'package:app_io2_examen/domain/repositories/auth_repository.dart';
+import 'package:app_io2_examen/domain/repositories/estudiante_repository.dart';
+import 'package:app_io2_examen/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:app_io2_examen/presentation/features/students/bloc/estudiantes_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'core/config.dart';
-import 'core/theme.dart';
-import 'core/router.dart';
-import 'features/auth/data/auth_repository.dart';
-import 'features/students/data/estudiante_repository.dart';
-import 'firebase_options.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'core/config/config.dart';
+import 'core/firebase_service.dart';
+import 'core/theme/theme.dart';
+import 'core/config/router.dart';
+import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/estudiante_repository_impl.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await FirebaseService.initialize();
 
-  FlutterError.onError = (details) {
-    if (details.exception is! FlutterErrorDetails) {
-      debugPrint('Error capturado: ${details.exception}');
-    }
-    FlutterError.presentError(details);
-  };
-
-  runApp(
-    MultiProvider(
-      providers: [
-        Provider<AuthRepository>(
-          create: (_) => AuthRepository(),
+    runApp(
+      MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<AuthRepository>(
+            create: (_) => AuthRepositoryImpl(),
+          ),
+          RepositoryProvider<EstudianteRepository>(
+            create: (_) => EstudianteRepositoryImpl(),
+          ),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create:
+                  (context) =>
+                      AuthBloc(authRepository: context.read<AuthRepository>(), firestore: FirebaseFirestore.instance)
+                        ..add(VerifyAuthStatus()),
+            ),
+            BlocProvider(
+              create:
+                  (context) => EstudiantesBloc(
+                    estudianteRepository: context.read<EstudianteRepository>(),
+                    docenteId: 'default',
+                  ),
+            ),
+          ],
+          child: const MyApp(),
         ),
-        Provider<EstudianteRepository>(
-          create: (context) => EstudianteRepository(), // Asegúrate de inicializarlo correctamente
+      ),
+    );
+  } catch (e) {
+    debugPrint('Error inicializando Firebase: $e');
+    runApp(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(child: Text('Error al inicializar la aplicación')),
         ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
