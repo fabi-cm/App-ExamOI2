@@ -21,24 +21,28 @@ class LogoutRequested extends AuthEvent {}
 
 class VerifyAuthStatus extends AuthEvent {}
 
-class RegisterStudentRequested extends AuthEvent {
-  final Estudiante estudiante;
+class RegisterUserRequested extends AuthEvent {
+  final User user;
   final String password;
+  final String? teacherId; // Para estudiantes
 
-  const RegisterStudentRequested({
-    required this.estudiante,
+  const RegisterUserRequested({
+    required this.user,
     required this.password,
+    this.teacherId,
   });
 
   @override
-  List<Object> get props => [estudiante, password];
+  List<Object> get props => [user, password];
 }
 
 class DeleteUserRequested extends AuthEvent {
-  final String email;
+  final String userId;
 
-  const DeleteUserRequested({required this.email});
+  const DeleteUserRequested({required this.userId});
 
   @override
-  List<Object> get props => [email];
+  List<Object> get props => [userId];
 }
+
+class CreateTestAdminRequested extends AuthEvent {}

@@ -1,27 +1,28 @@
-import 'package:bloc/bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app_io2_examen/domain/repositories/user_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:app_io2_examen/domain/entities/docente.dart';
+import 'package:app_io2_examen/domain/entities/user.dart';
 import 'package:app_io2_examen/domain/repositories/auth_repository.dart';
-
-import '../../../../domain/entities/estudiante.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final AuthRepository authRepository;
-  final FirebaseFirestore firestore;
+  final AuthRepository _authRepository;
+  final UserRepository _userRepository;
 
   AuthBloc({
-    required this.authRepository,
-    required this.firestore,
-  }) : super(AuthInitial()) {
+    required AuthRepository authRepository,
+    required UserRepository userRepository,
+  })  : _authRepository = authRepository,
+        _userRepository = userRepository,
+        super(AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<VerifyAuthStatus>(_onVerifyAuthStatus);
-    on<RegisterStudentRequested>(_onRegisterStudentRequested);
+    on<RegisterUserRequested>(_onRegisterUserRequested);
     on<DeleteUserRequested>(_onDeleteUserRequested);
+    on<CreateTestAdminRequested>(_onCreateTestAdminRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -30,20 +31,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
     try {
-      final user = await authRepository.login(event.email, event.password);
+      final user = await _authRepository.login(event.email, event.password);
       if (user != null) {
-        // Verificar si es docente o estudiante
-        final docente = await authRepository.getDocenteByEmail(event.email);
-        if (docente != null) {
-          emit(AuthSuccess(docente));
+        final userData = await _userRepository.getUserById(user.id);
+        if (userData != null) {
+          emit(AuthSuccess(userData));
         } else {
-          // Obtener datos del estudiante
-          final estudiante = await authRepository.getEstudianteByEmail(event.email);
-          if (estudiante != null) {
-            emit(StudentAuthSuccess(estudiante));
-          } else {
-            emit(const AuthError('Usuario no encontrado'));
-          }
+          emit(const AuthError('Datos de usuario no encontrados'));
         }
       } else {
         emit(const AuthError('Credenciales incorrectas'));
@@ -59,7 +53,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
     try {
-      await authRepository.logout();
+      await _authRepository.logout();
       emit(AuthInitial());
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -72,22 +66,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
     try {
-      final currentUser = await authRepository.currentUser;
+      final currentUser = await _authRepository.currentUser;
       if (currentUser != null) {
-        final email = currentUser.email;
-        if (email != null) {
-          final docente = await authRepository.getDocenteByEmail(email);
-          if (docente != null) {
-            emit(AuthSuccess(docente));
-          } else {
-            final estudiante = await authRepository.getEstudianteByEmail(email);
-            if (estudiante != null) {
-              emit(StudentAuthSuccess(estudiante));
-            } else {
-              emit(const AuthError('Usuario no registrado correctamente'));
-            }
-          }
-        }
+        emit(AuthSuccess(currentUser));
       } else {
         emit(AuthInitial());
       }
@@ -96,14 +77,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onRegisterStudentRequested(
-      RegisterStudentRequested event,
+  Future<void> _onRegisterUserRequested(
+      RegisterUserRequested event,
       Emitter<AuthState> emit,
       ) async {
     emit(AuthLoading());
     try {
-      await authRepository.registrarEstudiante(event.estudiante, event.password);
-      emit(StudentAuthSuccess(event.estudiante));
+      // Si es estudiante y tiene teacherId, lo asignamos
+      final userToRegister = event.teacherId != null && event.user.isStudent
+          ? event.user.copyWith(teacherId: event.teacherId)
+          : event.user;
+
+      await _authRepository.registerUser(userToRegister, event.password);
+      emit(AuthSuccess(userToRegister));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -115,9 +101,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
     try {
-      await authRepository.eliminarUsuario(event.email);
+      await _authRepository.deleteUser(event.userId);
       emit(UserDeletedSuccessfully());
       add(VerifyAuthStatus());
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onCreateTestAdminRequested(
+      CreateTestAdminRequested event,
+      Emitter<AuthState> emit,
+      ) async {
+    emit(AuthLoading());
+    try {
+      final testAdmin = User(
+        id: 'admin_test_001',
+        name: 'Admin Test',
+        email: 'admin@test.com',
+        isActive: true,
+        role: UserRole.admin,
+      );
+
+      await _authRepository.registerUser(testAdmin, 'admin123');
+      emit(TestAdminCreated());
     } catch (e) {
       emit(AuthError(e.toString()));
     }

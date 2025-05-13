@@ -12,18 +12,9 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {
-  final Docente user;
+  final User user;
 
   const AuthSuccess(this.user);
-
-  @override
-  List<Object> get props => [user];
-}
-
-class StudentAuthSuccess extends AuthState {
-  final Estudiante user;
-
-  const StudentAuthSuccess(this.user);
 
   @override
   List<Object> get props => [user];
@@ -39,3 +30,5 @@ class AuthError extends AuthState {
 }
 
 class UserDeletedSuccessfully extends AuthState {}
+
+class TestAdminCreated extends AuthState {}
